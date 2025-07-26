@@ -19,6 +19,7 @@ func NewApplication() (*Application, error) {
 
 	// stores will go here
 
+	// routes handler will go here
 	workoutHandler := api.NewWorkoutHandler()
 	app := &Application{
 		Logger:         logger,
