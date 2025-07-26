@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Rizzwaan/workoutVerse/internal/app"
+	"github.com/Rizzwaan/workoutVerse/internal/routes"
 )
 
 func main() {
@@ -22,10 +23,10 @@ func main() {
 
 	application.Logger.Printf("Listening on port %d", port)
 
-	http.HandleFunc("/health", HealthCheckHandler)
-
+	r := routes.SetupRoutes(application)
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", port),
+		Handler:      r,
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
@@ -37,8 +38,4 @@ func main() {
 	} else {
 		application.Logger.Println("Server is running on port 8080")
 	}
-}
-
-func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Status: OK\n")
 }
