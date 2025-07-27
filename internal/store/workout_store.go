@@ -18,7 +18,7 @@ type WorkoutEntry struct {
 	Reps            *int     `json:"reps"`
 	DurationSeconds *int     `json:"duration_seconds"`
 	Weight          *float64 `json:"weight"`
-	Note            string   `json:"note"`
+	Notes           string   `json:"notes"`
 	OrderIndex      int      `json:"order_index"`
 }
 
@@ -53,9 +53,9 @@ func (pg *PostgresWorkoutStore) CreateWorkout(workout *Workout) (*Workout, error
 
 	// Insert entries
 	for _, entry := range workout.Entries {
-		entryQuery := `INSERT INTO workout_entries (workout_id, exercise_name, sets, reps, duration_seconds, weight, note, order_index)
+		entryQuery := `INSERT INTO workout_entries (workout_id, exercise_name, sets, reps, duration_seconds, weight, notes, order_index)
 					   VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
-		err = tx.QueryRow(entryQuery, workout.ID, entry.ExerciseName, entry.Sets, entry.Reps, entry.DurationSeconds, entry.Weight, entry.Note, entry.OrderIndex).Scan(&entry.ID)
+		err = tx.QueryRow(entryQuery, workout.ID, entry.ExerciseName, entry.Sets, entry.Reps, entry.DurationSeconds, entry.Weight, entry.Notes, entry.OrderIndex).Scan(&entry.ID)
 		if err != nil {
 			return nil, err
 		}
