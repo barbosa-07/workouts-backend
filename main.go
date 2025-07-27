@@ -21,6 +21,9 @@ func main() {
 		panic(err)
 	}
 
+	// Ensure the database connection is closed when the application exits
+	defer application.DB.Close()
+
 	application.Logger.Printf("Listening on port %d", port)
 
 	r := routes.SetupRoutes(application)
