@@ -10,3 +10,7 @@
 
 ## go project
 - go run main.go
+
+# migration
+- export PATH=$HOME/go/bin:$PATH                                                                          
+- goose -dir migrations postgres "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable" up
