@@ -12,9 +12,9 @@ import (
 )
 
 type TokenHandler struct {
-	tokenStore  store.TokenStore
-	userHandler store.UserStore
-	logger      *log.Logger
+	tokenStore store.TokenStore
+	userStore  store.UserStore
+	logger     *log.Logger
 }
 
 type createTokenRequest struct {
@@ -22,50 +22,52 @@ type createTokenRequest struct {
 	Password string `json:"password"`
 }
 
-// Constructor for TokenHandler
-func NewTokenHandler(tokenStore store.TokenStore, userHandler store.UserStore, logger *log.Logger) *TokenHandler {
+func NewTokenHandler(tokenStore store.TokenStore, userStore store.UserStore, logger *log.Logger) *TokenHandler {
 	return &TokenHandler{
-		tokenStore:  tokenStore,
-		userHandler: userHandler,
-		logger:      logger,
+		tokenStore: tokenStore,
+		userStore:  userStore,
+		logger:     logger,
 	}
 }
 
 func (h *TokenHandler) HandleCreateToken(w http.ResponseWriter, r *http.Request) {
 	var req createTokenRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
+
 	if err != nil {
-		h.logger.Printf("Error decoding request body: %v", err)
-		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelop{"error": "Invalid request body"})
+		h.logger.Printf("ERROR: createTokenRequest: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelop{"error": "invalid request payload"})
 		return
 	}
 
-	user, err := h.userHandler.GetUserByUsername(req.Username)
-	if err != nil {
-		h.logger.Printf("Error fetching user: %v", err)
-		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelop{"error": "Invalid username or password"})
+	// lets get the user
+	user, err := h.userStore.GetUserByUsername(req.Username)
+	if err != nil || user == nil {
+		h.logger.Printf("ERROR: GetUserByUsername: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelop{"error": "internal server error"})
 		return
 	}
 
-	passwordMatches, err := user.PasswordHash.Matches(req.Password)
+	passwordsDoMatch, err := user.PasswordHash.Matches(req.Password)
 	if err != nil {
-		h.logger.Printf("Error comparing password: %v", err)
-		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelop{"error": "Internal server error"})
+		h.logger.Printf("ERORR: PasswordHash.Mathes %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelop{"error": "internal server error"})
 		return
 	}
 
-	if !passwordMatches {
-		h.logger.Printf("Invalid password for user: %s", req.Username)
-		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelop{"error": "Invalid username or password"})
+	if !passwordsDoMatch {
+		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelop{"error": "invalid credentials"})
 		return
 	}
 
 	token, err := h.tokenStore.CreateNewToken(user.ID, 24*time.Hour, tokens.ScopeAuth)
 	if err != nil {
-		h.logger.Printf("Error creating token: %v", err)
-		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelop{"error": "Could not create token"})
+		h.logger.Printf("ERORR: Creating Token %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelop{"error": "internal server error"})
 		return
+
 	}
 
-	utils.WriteJSON(w, http.StatusOK, utils.Envelop{"token": token})
+	utils.WriteJSON(w, http.StatusCreated, utils.Envelop{"auth_token": token})
+
 }
